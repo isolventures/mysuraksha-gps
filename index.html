@@ -1,0 +1,216 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MySuraksha Emergency GPS</title>
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #ffffff;
+  margin: 0;
+  padding: 25px;
+  color: #333;
+}
+
+.container {
+  max-width: 450px;
+  margin: auto;
+  text-align: center;
+}
+
+h2 {
+  color: #198754;
+}
+
+button {
+  width: 100%;
+  padding: 16px;
+  margin-top: 15px;
+  border: none;
+  border-radius: 8px;
+  background: #198754;
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+button:disabled {
+  background: #888;
+}
+
+#status {
+  margin-top: 20px;
+  padding: 12px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  background: #f5f5f5;
+  border-radius: 8px;
+}
+
+#mapLink {
+  display: none;
+  margin-top: 15px;
+  padding: 14px;
+  background: #e8f5e9;
+  border-radius: 8px;
+  color: #1565c0;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+#shareButton {
+  display: none;
+  background: #315b9a;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>MySuraksha</h2>
+<p>Emergency Location Sharing</p>
+
+<button id="gpsButton">
+📍 Get Current Location
+</button>
+
+<div id="status" aria-live="polite">
+Press the button to obtain your current location.
+</div>
+
+<a id="mapLink"
+   href="#"
+   target="_blank"
+   rel="noopener noreferrer">
+Open Location in Google Maps
+</a>
+
+<button id="shareButton">
+Share Emergency Location
+</button>
+
+</div>
+
+<script>
+
+const gpsButton = document.getElementById("gpsButton");
+const statusBox = document.getElementById("status");
+const mapLink = document.getElementById("mapLink");
+const shareButton = document.getElementById("shareButton");
+
+let mapURL = "";
+
+gpsButton.addEventListener("click", function() {
+
+  mapLink.style.display = "none";
+  shareButton.style.display = "none";
+
+  if (!window.isSecureContext) {
+    statusBox.textContent =
+      "Error: Secure HTTPS connection required.";
+    return;
+  }
+
+  if (!navigator.geolocation) {
+    statusBox.textContent =
+      "Your browser does not support GPS.";
+    return;
+  }
+
+  gpsButton.disabled = true;
+
+  statusBox.textContent =
+    "Requesting location permission...";
+
+  navigator.geolocation.getCurrentPosition(
+
+    function(position) {
+
+      const latitude = position.coords.latitude;
+      const longitude = position.coords.longitude;
+      const accuracy = Math.round(position.coords.accuracy);
+
+      mapURL =
+        "https://www.google.com/maps?q=" +
+        latitude + "," + longitude;
+
+      statusBox.textContent =
+        "LOCATION OBTAINED SUCCESSFULLY\n\n" +
+        "Latitude: " + latitude + "\n" +
+        "Longitude: " + longitude + "\n" +
+        "Accuracy: approximately " + accuracy + " metres.";
+
+      mapLink.href = mapURL;
+      mapLink.style.display = "block";
+      shareButton.style.display = "block";
+
+      gpsButton.disabled = false;
+
+    },
+
+    function(error) {
+
+      const messages = {
+        1: "Location permission denied. Allow location access in Chrome.",
+        2: "Location unavailable. Check device location services.",
+        3: "GPS timed out. Please try again."
+      };
+
+      statusBox.textContent =
+        messages[error.code] || "Unable to obtain GPS location.";
+
+      gpsButton.disabled = false;
+
+    },
+
+    {
+      enableHighAccuracy: true,
+      timeout: 20000,
+      maximumAge: 0
+    }
+
+  );
+
+});
+
+shareButton.addEventListener("click", async function() {
+
+  if (!mapURL) return;
+
+  const shareData = {
+    title: "MySuraksha Emergency Location",
+    text: "My current emergency location:",
+    url: mapURL
+  };
+
+  try {
+
+    if (navigator.share) {
+      await navigator.share(shareData);
+    } else {
+      await navigator.clipboard.writeText(mapURL);
+      statusBox.textContent =
+        "Location link copied. You can now send it to your emergency contact.";
+    }
+
+  } catch (error) {
+
+    if (error.name !== "AbortError") {
+      statusBox.textContent =
+        "Unable to share automatically. Open Google Maps and copy the location link.";
+    }
+
+  }
+
+});
+
+</script>
+
+</body>
+</html>
